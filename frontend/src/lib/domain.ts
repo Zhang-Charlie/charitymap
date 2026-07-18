@@ -25,4 +25,8 @@ export type FundingEventSummary = {
   status: FundingStatus
   reportedAt: string
   locationPrecision: LocationPrecision
+  coordinates: {
+    latitude: number
+    longitude: number
+  } | null
 }

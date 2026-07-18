@@ -11,7 +11,11 @@ export const mockFundingEvents: FundingEventSummary[] = [
     sectorName: "Education",
     status: "committed",
     reportedAt: "Recently reported",
-    locationPrecision: "country"
+    locationPrecision: "country",
+    coordinates: {
+      latitude: 0.0236,
+      longitude: 37.9062
+    }
   },
   {
     id: "demo-2",
@@ -23,7 +27,11 @@ export const mockFundingEvents: FundingEventSummary[] = [
     sectorName: "Humanitarian response",
     status: "announced",
     reportedAt: "Recently reported",
-    locationPrecision: "region"
+    locationPrecision: "region",
+    coordinates: {
+      latitude: 12.8797,
+      longitude: 121.774
+    }
   },
   {
     id: "demo-3",
@@ -35,6 +43,10 @@ export const mockFundingEvents: FundingEventSummary[] = [
     sectorName: "Water and sanitation",
     status: "fully_disbursed",
     reportedAt: "Recently reported",
-    locationPrecision: "country"
+    locationPrecision: "country",
+    coordinates: {
+      latitude: 7.9465,
+      longitude: -1.0232
+    }
   }
 ]
