@@ -20,6 +20,8 @@ def source() -> SourceReference:
 
 def test_currency_is_normalised_to_uppercase() -> None:
     candidate = FundingEventCandidate(
+        event_identifier="test-1",
+        headline="Test event",
         funder=OrganisationReference(name="Funder"),
         source=source(),
         funding_type="grant",
@@ -33,6 +35,8 @@ def test_currency_is_normalised_to_uppercase() -> None:
 def test_amount_requires_currency() -> None:
     with pytest.raises(ValidationError):
         FundingEventCandidate(
+            event_identifier="test-1",
+            headline="Test event",
             funder=OrganisationReference(name="Funder"),
             source=source(),
             funding_type="grant",

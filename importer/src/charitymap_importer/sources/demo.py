@@ -16,6 +16,8 @@ from charitymap_importer.models import (
 def load_demo_candidates() -> list[FundingEventCandidate]:
     return [
         FundingEventCandidate(
+            event_identifier="demo-1",
+            headline="Education grant reported",
             funder=OrganisationReference(name="Example Foundation"),
             recipient=OrganisationReference(name="Learning Partnership"),
             source=SourceReference(

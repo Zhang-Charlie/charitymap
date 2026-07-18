@@ -52,7 +52,7 @@ uv sync
 uv run charitymap-import
 ```
 
-The default importer runs in dry-run mode and writes nothing unless a database URL is provided and an explicit write mode is implemented for a source.
+The IATI importer runs in dry-run mode unless `IMPORT_WRITE_ENABLED=true`, an IATI API key, and a reporting-organisation reference are configured. Written records remain review candidates until a trusted reviewer approves publication. See [`docs/IATI_IMPORT.md`](docs/IATI_IMPORT.md).
 
 ## Start local PostGIS
 

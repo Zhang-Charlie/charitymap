@@ -8,9 +8,8 @@ from pydantic import BaseModel, Field, HttpUrl, model_validator
 class FundingStatus(StrEnum):
     ANNOUNCED = "announced"
     COMMITTED = "committed"
-    PARTIALLY_DISBURSED = "partially_disbursed"
-    FULLY_DISBURSED = "fully_disbursed"
-    REPORTED_EXPENDITURE = "reported_expenditure"
+    DISBURSED = "disbursed"
+    REPORTED_SPEND = "reported_spend"
     CANCELLED = "cancelled"
     UNKNOWN = "unknown"
 
@@ -52,9 +51,13 @@ class LocationCandidate(BaseModel):
 
 
 class FundingEventCandidate(BaseModel):
+    event_identifier: str = Field(min_length=1)
+    headline: str = Field(min_length=1)
     funder: OrganisationReference
     recipient: OrganisationReference | None = None
     source: SourceReference
+    project_identifier: str | None = None
+    sector_code: str | None = None
     funding_type: str = Field(min_length=1)
     status: FundingStatus = FundingStatus.UNKNOWN
     original_amount: Decimal | None = Field(default=None, ge=0)

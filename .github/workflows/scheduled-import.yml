@@ -29,9 +29,16 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           IMPORT_WRITE_ENABLED: ${{ vars.IMPORT_WRITE_ENABLED }}
+          IATI_API_KEY: ${{ secrets.IATI_API_KEY }}
+          IATI_PUBLISHER_REF: ${{ vars.IATI_PUBLISHER_REF }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
             echo "DATABASE_URL is not configured. Exiting safely."
+            exit 0
+          fi
+
+          if [ -z "$IATI_API_KEY" ] || [ -z "$IATI_PUBLISHER_REF" ]; then
+            echo "IATI import configuration is incomplete. Exiting safely."
             exit 0
           fi
 

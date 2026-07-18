@@ -19,6 +19,7 @@ def process_candidates(
     candidates: list[FundingEventCandidate],
     *,
     dry_run: bool,
+    rejected: int = 0,
 ) -> ImportResult:
     for candidate in candidates:
         logger.info(
@@ -29,8 +30,8 @@ def process_candidates(
         )
 
     return ImportResult(
-        candidates=len(candidates),
+        candidates=len(candidates) + rejected,
         accepted=len(candidates),
-        rejected=0,
+        rejected=rejected,
         dry_run=dry_run,
     )
