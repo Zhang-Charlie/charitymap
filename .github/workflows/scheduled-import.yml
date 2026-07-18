@@ -1,0 +1,44 @@
+name: Scheduled funding import
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: charitymap-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: importer
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Run importer when configured
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          IMPORT_WRITE_ENABLED: ${{ vars.IMPORT_WRITE_ENABLED }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL is not configured. Exiting safely."
+            exit 0
+          fi
+
+          if [ "$IMPORT_WRITE_ENABLED" != "true" ]; then
+            echo "Import writes are disabled. Running a dry run."
+            uv run charitymap-import --dry-run
+            exit 0
+          fi
+
+          uv run charitymap-import

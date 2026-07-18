@@ -1,0 +1,35 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+.next/
+out/
+coverage/
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.py[cod]
+
+# Local data
+.local/
+*.log
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+
+# Supabase local state
+supabase/.branches/
+supabase/.temp/
+
+# Generated reports
+*.tsbuildinfo
+.coverage

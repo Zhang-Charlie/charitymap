@@ -1,0 +1,47 @@
+[project]
+name = "charitymap-importer"
+version = "0.1.0"
+description = "Scheduled ingestion and validation for CharityMap"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "geoalchemy2>=0.20.0",
+    "httpx>=0.28.1",
+    "psycopg[binary]>=3.3.4",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.2",
+    "sqlalchemy>=2.0.51",
+    "structlog>=26.1.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.0,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.0",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.22",
+]
+
+
+[project.scripts]
+charitymap-import = "charitymap_importer.cli:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+packages = ["charitymap_importer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=charitymap_importer --cov-report=term-missing"

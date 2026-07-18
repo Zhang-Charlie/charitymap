@@ -1,0 +1,22 @@
+services:
+  database:
+    image: postgis/postgis:17-3.5
+    container_name: charitymap-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-charitymap}
+      POSTGRES_USER: ${POSTGRES_USER:-charitymap}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-charitymap}
+    ports:
+      - "5432:5432"
+    volumes:
+      - charitymap-postgres:/var/lib/postgresql/data
+      - ./supabase/migrations/202607180001_initial_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-charitymap} -d ${POSTGRES_DB:-charitymap}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  charitymap-postgres:
