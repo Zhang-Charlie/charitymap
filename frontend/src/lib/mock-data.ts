@@ -15,6 +15,10 @@ export const mockFundingEvents: FundingEventSummary[] = [
     coordinates: {
       latitude: 0.0236,
       longitude: 37.9062
+    },
+    source: {
+      publisher: "CharityMap demonstration fixture",
+      url: "https://example.org/funding/demo-1"
     }
   },
   {
@@ -31,6 +35,10 @@ export const mockFundingEvents: FundingEventSummary[] = [
     coordinates: {
       latitude: 12.8797,
       longitude: 121.774
+    },
+    source: {
+      publisher: "CharityMap demonstration fixture",
+      url: "https://example.org/funding/demo-2"
     }
   },
   {
@@ -41,12 +49,16 @@ export const mockFundingEvents: FundingEventSummary[] = [
     amountLabel: "€640,000",
     countryName: "Ghana",
     sectorName: "Water and sanitation",
-    status: "fully_disbursed",
+    status: "disbursed",
     reportedAt: "Recently reported",
     locationPrecision: "country",
     coordinates: {
       latitude: 7.9465,
       longitude: -1.0232
+    },
+    source: {
+      publisher: "CharityMap demonstration fixture",
+      url: "https://example.org/funding/demo-3"
     }
   }
 ]

@@ -10,7 +10,7 @@ export default function MethodologyPage() {
       </p>
       <h2 className="mt-10 text-2xl font-semibold text-[#18211d]">Current status</h2>
       <p className="mt-4 leading-8 text-[#66747d]">
-        This repository is at foundation stage. The homepage uses clearly labelled demonstration records until a validated data source is connected.
+        IATI transaction records enter CharityMap as review candidates. A record appears publicly only after a reviewer checks its source evidence and approves publication.
       </p>
     </main>
   )

@@ -1,9 +1,8 @@
 export type FundingStatus =
   | "announced"
   | "committed"
-  | "partially_disbursed"
-  | "fully_disbursed"
-  | "reported_expenditure"
+  | "disbursed"
+  | "reported_spend"
   | "cancelled"
   | "unknown"
 
@@ -29,4 +28,10 @@ export type FundingEventSummary = {
     latitude: number
     longitude: number
   } | null
+  source: {
+    publisher: string
+    url: string
+  }
 }
+
+export type FundingDataState = "ready" | "unconfigured" | "unavailable"

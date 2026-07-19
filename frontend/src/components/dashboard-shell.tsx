@@ -2,8 +2,15 @@ import Link from "next/link"
 import { Code2, Filter, Search } from "lucide-react"
 import { ActivityFeed } from "@/components/activity-feed"
 import { MapPanel } from "@/components/map-panel"
+import type { FundingDataState, FundingEventSummary } from "@/lib/domain"
 
-export function DashboardShell() {
+type DashboardShellProps = {
+  events: FundingEventSummary[]
+  state: FundingDataState
+  message: string | null
+}
+
+export function DashboardShell({ events, state, message }: DashboardShellProps) {
   return (
     <main className="min-h-screen bg-[#f6f8fb] text-[#18211d]">
       <header className="border-b border-[#d9e2e7] bg-white/95 backdrop-blur-xl">
@@ -50,12 +57,12 @@ export function DashboardShell() {
       </section>
 
       <div className="mx-auto grid max-w-[1600px] grid-cols-1 overflow-hidden border-x border-[#d9e2e7] bg-white xl:grid-cols-[minmax(0,1fr)_420px]">
-        <MapPanel />
-        <ActivityFeed />
+        <MapPanel events={events} dataState={state} message={message} />
+        <ActivityFeed events={events} dataState={state} message={message} />
       </div>
 
       <footer className="border-t border-[#d9e2e7] bg-white px-4 py-5 text-center text-xs text-[#66747d]">
-        Demo records are placeholders. Public records will require a source and approval.
+        Published records are sourced from public disclosures and manually reviewed before release.
       </footer>
     </main>
   )
