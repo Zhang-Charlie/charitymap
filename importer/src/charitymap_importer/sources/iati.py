@@ -86,7 +86,7 @@ class IatiDatastoreClient:
         documents = _documents_from_response(response)
         accepted: list[IatiTransactionRecord] = []
         rejected: list[RejectedIatiRecord] = []
-        seen_identifiers: set[str] = set()
+        identifier_counts: dict[str, int] = {}
 
         for document in documents:
             if len(accepted) >= self._max_records:
@@ -94,17 +94,20 @@ class IatiDatastoreClient:
             payload = dict(document)
             payload_hash = _payload_hash(payload)
             identifier = _record_identifier(payload, payload_hash)
-            if identifier in seen_identifiers:
+            occurrence = identifier_counts.get(identifier, 0)
+            identifier_counts[identifier] = occurrence + 1
+            if occurrence > 0:
                 rejected.append(
                     RejectedIatiRecord(
-                        source_record_identifier=f"{identifier}:duplicate:{payload_hash[:16]}",
+                        source_record_identifier=(
+                            f"{identifier}:duplicate:{occurrence}:{payload_hash[:16]}"
+                        ),
                         payload=payload,
                         payload_hash=payload_hash,
                         reason="duplicate source transaction identifier",
                     )
                 )
                 continue
-            seen_identifiers.add(identifier)
             try:
                 accepted.append(_to_transaction_record(payload, payload_hash))
             except ValueError as error:

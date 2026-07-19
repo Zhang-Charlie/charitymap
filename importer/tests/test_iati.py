@@ -98,8 +98,14 @@ def test_caps_import_to_configured_number_of_accepted_transactions() -> None:
 
 
 def test_rejects_duplicate_transaction_identifiers() -> None:
-    batch = client_for([valid_transaction(), valid_transaction()]).fetch()
+    batch = client_for([valid_transaction(), valid_transaction(), valid_transaction()]).fetch()
 
     assert len(batch.accepted) == 1
-    assert len(batch.rejected) == 1
-    assert batch.rejected[0].reason == "duplicate source transaction identifier"
+    assert len(batch.rejected) == 2
+    duplicate_identifiers = sorted(record.source_record_identifier for record in batch.rejected)
+    assert duplicate_identifiers[0].startswith("transaction-1:duplicate:1:")
+    assert duplicate_identifiers[1].startswith("transaction-1:duplicate:2:")
+    assert duplicate_identifiers[0].rsplit(":", 1)[1] == duplicate_identifiers[1].rsplit(":", 1)[1]
+    assert all(
+        record.reason == "duplicate source transaction identifier" for record in batch.rejected
+    )
