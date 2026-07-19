@@ -197,8 +197,8 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
 
   if (!mapError) {
     return (
-      <section aria-label="Funding event map" className="relative h-full min-h-[32rem] overflow-hidden bg-[#dce7f4]">
-        <div ref={containerRef} className="h-full min-h-[32rem] w-full" />
+      <section aria-label="Funding event map" className="relative h-[32rem] overflow-hidden bg-[#dce7f4] sm:h-[36rem] xl:h-full xl:min-h-0">
+        <div ref={containerRef} className="h-full w-full" />
         <div className="pointer-events-none absolute left-14 top-4 rounded-md border border-black/10 bg-white/90 px-3 py-2 text-xs font-medium text-[#24342d] shadow-sm">
           Approved funding locations
         </div>
@@ -217,7 +217,7 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
   }
 
   return (
-    <div className="relative flex h-full min-h-[32rem] items-center justify-center overflow-hidden bg-[#eef4f8] text-[#18211d]">
+    <div className="relative flex h-[32rem] items-center justify-center overflow-hidden bg-[#eef4f8] text-[#18211d] sm:h-[36rem] xl:h-full xl:min-h-0">
       <div className="absolute inset-0 opacity-60 [background-image:linear-gradient(rgba(37,99,235,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(37,99,235,.12)_1px,transparent_1px)] [background-size:48px_48px]" />
       <div className="relative z-10 mx-6 max-w-md rounded-lg border border-[#d9e2e7] bg-white/90 p-7 text-center shadow-sm backdrop-blur-xl">
         <AlertTriangle className="mx-auto h-10 w-10 text-amber-500" />
