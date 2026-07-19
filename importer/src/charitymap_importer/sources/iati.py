@@ -27,6 +27,8 @@ SUPPORTED_TRANSACTION_TYPES: Final = {
     "3": FundingStatus.DISBURSED,
     "4": FundingStatus.REPORTED_SPEND,
 }
+SUPPORTED_TRANSACTION_QUERY: Final = "transaction_transaction_type_code:(2 OR 3 OR 4)"
+REQUIRED_FUNDER_QUERY: Final = "transaction_provider_org_narrative:[* TO *]"
 REQUESTED_FIELDS: Final = (
     "iati_identifier,title_narrative,reporting_org_ref,reporting_org_narrative,"
     "last_updated_datetime,transaction_ref,transaction_transaction_type_code,"
@@ -123,7 +125,10 @@ class IatiDatastoreClient:
             "User-Agent": "CharityMap importer/0.1 (+https://github.com/Zhang-Charlie/charitymap)",
         }
         params = {
-            "q": f'reporting_org_ref:"{_escape_solr_value(self._publisher_ref)}"',
+            "q": (
+                f"reporting_org_ref:{_escape_solr_value(self._publisher_ref)} "
+                f"AND {SUPPORTED_TRANSACTION_QUERY} AND {REQUIRED_FUNDER_QUERY}"
+            ),
             "rows": str(self._max_records),
             "start": "0",
             "wt": "json",

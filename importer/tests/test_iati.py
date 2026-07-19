@@ -10,6 +10,10 @@ def response_for(documents: list[dict[str, object]]) -> httpx.MockTransport:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.headers["Ocp-Apim-Subscription-Key"] == "test-key"
         assert request.url.params["rows"] in {"1", "2"}
+        assert request.url.params["q"] == (
+            "reporting_org_ref:GB-TEST AND transaction_transaction_type_code:(2 OR 3 OR 4) "
+            "AND transaction_provider_org_narrative:[* TO *]"
+        )
         return httpx.Response(200, json={"response": {"docs": documents}})
 
     return httpx.MockTransport(handler)
