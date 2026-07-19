@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import maplibregl, { type Map, type StyleSpecification } from "maplibre-gl"
+import type { Map, StyleSpecification } from "maplibre-gl"
 import { AlertTriangle, Globe2, MapPinned } from "lucide-react"
 import type { FundingDataState, FundingEventSummary, FundingStatus } from "@/lib/domain"
 
@@ -96,8 +96,8 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<Map | null>(null)
   const [mapError, setMapError] = useState<string | null>(null)
-  const styleUrl = process.env.NEXT_PUBLIC_MAP_STYLE_URL
-  const mapStyle = useMemo(() => styleUrl ?? defaultMapStyle, [styleUrl])
+  const styleUrl = process.env.NEXT_PUBLIC_MAP_STYLE_URL?.trim()
+  const mapStyle = useMemo(() => styleUrl || defaultMapStyle, [styleUrl])
   const hasMapLocations = events.some((event) => event.coordinates)
 
   useEffect(() => {
@@ -106,6 +106,7 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
     }
 
     let disposed = false
+    let map: Map | null = null
     const reportMapError = (message: string) => {
       queueMicrotask(() => {
         if (!disposed) {
@@ -114,76 +115,82 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
       })
     }
 
-    try {
-      const map = new maplibregl.Map({
-        container: containerRef.current,
-        style: mapStyle,
-        center: [18, 24],
-        zoom: 2.1,
-        minZoom: 1,
-        attributionControl: {
-          compact: true
-        }
-      })
-
-      map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left")
-      map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left")
-
-      const mappedEvents = events.filter((event) => event.coordinates)
-
-      mappedEvents.forEach((event) => {
-        if (!event.coordinates) {
+    void import("maplibre-gl")
+      .then(({ default: maplibregl }) => {
+        if (disposed || !containerRef.current) {
           return
         }
 
-        const popup = new maplibregl.Popup({
-          closeButton: false,
-          offset: 18
-        }).setDOMContent(createPopupElement(event))
-
-        new maplibregl.Marker({
-          element: createMarkerElement(event.status)
-        })
-          .setLngLat([event.coordinates.longitude, event.coordinates.latitude])
-          .setPopup(popup)
-          .addTo(map)
-      })
-
-      map.once("load", () => {
-        if (mappedEvents.length < 2) {
-          return
-        }
-
-        const bounds = new maplibregl.LngLatBounds()
-
-        mappedEvents.forEach((event) => {
-          if (event.coordinates) {
-            bounds.extend([event.coordinates.longitude, event.coordinates.latitude])
+        map = new maplibregl.Map({
+          container: containerRef.current,
+          style: mapStyle,
+          center: [18, 24],
+          zoom: 2.1,
+          minZoom: 1,
+          attributionControl: {
+            compact: true
           }
         })
 
-        map.fitBounds(bounds, {
-          duration: 0,
-          maxZoom: 3.2,
-          padding: 80
+        map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left")
+        map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left")
+
+        const mappedEvents = events.filter((event) => event.coordinates)
+
+        mappedEvents.forEach((event) => {
+          if (!event.coordinates || !map) {
+            return
+          }
+
+          const popup = new maplibregl.Popup({
+            closeButton: false,
+            offset: 18
+          }).setDOMContent(createPopupElement(event))
+
+          new maplibregl.Marker({
+            element: createMarkerElement(event.status)
+          })
+            .setLngLat([event.coordinates.longitude, event.coordinates.latitude])
+            .setPopup(popup)
+            .addTo(map)
         })
-      })
 
-      map.on("error", (event) => {
-        if (!map.loaded()) {
-          const message = event.error?.message ?? "The map style or tiles could not be loaded."
-          reportMapError(message)
-        }
-      })
+        map.once("load", () => {
+          if (!map || mappedEvents.length < 2) {
+            return
+          }
 
-      mapRef.current = map
-    } catch (error) {
-      reportMapError(error instanceof Error ? error.message : "The map could not be initialized.")
-    }
+          const bounds = new maplibregl.LngLatBounds()
+
+          mappedEvents.forEach((event) => {
+            if (event.coordinates) {
+              bounds.extend([event.coordinates.longitude, event.coordinates.latitude])
+            }
+          })
+
+          map.fitBounds(bounds, {
+            duration: 0,
+            maxZoom: 3.2,
+            padding: 80
+          })
+        })
+
+        map.on("error", (event) => {
+          if (map && !map.loaded()) {
+            const message = event.error?.message ?? "The map style or tiles could not be loaded."
+            reportMapError(message)
+          }
+        })
+
+        mapRef.current = map
+      })
+      .catch((error: unknown) => {
+        reportMapError(error instanceof Error ? error.message : "The map could not be initialized.")
+      })
 
     return () => {
       disposed = true
-      mapRef.current?.remove()
+      map?.remove()
       mapRef.current = null
     }
   }, [events, mapError, mapStyle])
