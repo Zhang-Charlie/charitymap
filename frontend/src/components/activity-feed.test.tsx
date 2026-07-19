@@ -15,6 +15,7 @@ describe("ActivityFeed", () => {
             funderName: "Example Funder",
             recipientName: "Example Recipient",
             amountLabel: "$1,250.50",
+            countryCode: "KE",
             countryName: "KE",
             sectorName: "14020",
             status: "disbursed",

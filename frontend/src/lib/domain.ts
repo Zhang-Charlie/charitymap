@@ -19,6 +19,7 @@ export type FundingEventSummary = {
   funderName: string
   recipientName: string | null
   amountLabel: string | null
+  countryCode: string | null
   countryName: string | null
   sectorName: string | null
   status: FundingStatus

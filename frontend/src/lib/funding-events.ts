@@ -94,7 +94,8 @@ export async function getPublicFundingEvents(): Promise<PublicFundingEventsResul
 
 function toFundingEventSummary(value: unknown): FundingEventSummary {
   const row = value as PublicFundingEventRow
-  const countryName = row.location_name ?? row.country_code
+  const countryCode = normalizeCountryCode(row.country_code)
+  const countryName = row.location_name ?? countryNameFromCode(countryCode)
   const latitude = numberOrNull(row.latitude)
   const longitude = numberOrNull(row.longitude)
 
@@ -104,6 +105,7 @@ function toFundingEventSummary(value: unknown): FundingEventSummary {
     funderName: row.funder_name,
     recipientName: row.recipient_name,
     amountLabel: formatAmount(row.original_amount, row.original_currency),
+    countryCode,
     countryName,
     sectorName: row.sector_code,
     status: fundingStatuses.has(row.status) ? (row.status as FundingStatus) : "unknown",
@@ -119,6 +121,23 @@ function toFundingEventSummary(value: unknown): FundingEventSummary {
       publisher: row.source_publisher,
       url: row.source_url
     }
+  }
+}
+
+function normalizeCountryCode(value: string | null): string | null {
+  const countryCode = value?.trim().toUpperCase() ?? ""
+  return /^[A-Z]{2}$/.test(countryCode) ? countryCode : null
+}
+
+function countryNameFromCode(countryCode: string | null): string | null {
+  if (!countryCode) {
+    return null
+  }
+
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode) ?? countryCode
+  } catch {
+    return countryCode
   }
 }
 

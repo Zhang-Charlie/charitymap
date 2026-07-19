@@ -1,9 +1,24 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import type { FeatureCollection, Geometry } from "geojson"
 import type { Map, StyleSpecification } from "maplibre-gl"
 import { AlertTriangle, Globe2, MapPinned } from "lucide-react"
 import type { FundingDataState, FundingEventSummary, FundingStatus } from "@/lib/domain"
+import { getMapCoverage, type CountryCoverage } from "@/lib/map-coverage"
+
+const countrySourceId = "country-boundaries"
+const countryFillLayerId = "funding-countries-fill"
+const countryOutlineLayerId = "funding-countries-outline"
+
+type CountryBoundaryProperties = {
+  countryCode: string
+  countryName: string
+  labelLatitude: number
+  labelLongitude: number
+}
+
+type CountryBoundaryCollection = FeatureCollection<Geometry, CountryBoundaryProperties>
 
 const defaultMapStyle: StyleSpecification = {
   version: 8,
@@ -86,6 +101,60 @@ function createPopupElement(event: FundingEventSummary) {
   return popup
 }
 
+function createCountryPopupElement(country: CountryCoverage) {
+  const popup = document.createElement("div")
+  popup.style.minWidth = "190px"
+
+  const headline = document.createElement("p")
+  headline.style.margin = "0 0 5px"
+  headline.style.fontWeight = "700"
+  headline.style.color = "#18211d"
+  headline.textContent = country.name
+
+  const count = document.createElement("p")
+  count.style.margin = "0 0 5px"
+  count.style.color = "#2563eb"
+  count.style.fontWeight = "600"
+  count.textContent = `${country.eventCount} approved ${country.eventCount === 1 ? "record" : "records"}`
+
+  const detail = document.createElement("p")
+  detail.style.margin = "0"
+  detail.style.color = "#66747d"
+  detail.style.fontSize = "12px"
+  detail.textContent = "IATI reports the country, but not an exact point."
+
+  popup.append(headline, count, detail)
+  return popup
+}
+
+function createCountryMarkerElement(country: CountryCoverage) {
+  const marker = document.createElement("div")
+  marker.className = [
+    "grid h-8 min-w-8 place-items-center rounded-full border-2 border-white bg-blue-700 px-2",
+    "text-xs font-bold text-white shadow-lg transition-transform hover:scale-110"
+  ].join(" ")
+  marker.setAttribute(
+    "aria-label",
+    `${country.eventCount} country-level funding ${country.eventCount === 1 ? "record" : "records"} in ${country.name}`
+  )
+  marker.textContent = String(country.eventCount)
+  return marker
+}
+
+async function loadCountryBoundaries(countryCodes: string[]): Promise<CountryBoundaryCollection> {
+  const response = await fetch("/data/countries-110m.geojson")
+  if (!response.ok) {
+    throw new Error("Country boundary data could not be loaded.")
+  }
+
+  const boundaries = (await response.json()) as CountryBoundaryCollection
+  const includedCodes = new Set(countryCodes)
+  return {
+    type: "FeatureCollection",
+    features: boundaries.features.filter(({ properties }) => includedCodes.has(properties.countryCode))
+  }
+}
+
 type MapPanelProps = {
   events: FundingEventSummary[]
   dataState: FundingDataState
@@ -98,7 +167,8 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
   const [mapError, setMapError] = useState<string | null>(null)
   const styleUrl = process.env.NEXT_PUBLIC_MAP_STYLE_URL?.trim()
   const mapStyle = useMemo(() => styleUrl || defaultMapStyle, [styleUrl])
-  const hasMapLocations = events.some((event) => event.coordinates)
+  const coverage = useMemo(() => getMapCoverage(events), [events])
+  const hasMapLocations = coverage.exactEvents.length > 0 || coverage.countryLevelEventCount > 0
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || mapError) {
@@ -115,8 +185,13 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
       })
     }
 
-    void import("maplibre-gl")
-      .then(({ default: maplibregl }) => {
+    const countryCodes = coverage.countries.map(({ code }) => code)
+
+    void Promise.all([
+      import("maplibre-gl"),
+      countryCodes.length > 0 ? loadCountryBoundaries(countryCodes) : Promise.resolve(null)
+    ])
+      .then(([{ default: maplibregl }, countryBoundaries]) => {
         if (disposed || !containerRef.current) {
           return
         }
@@ -135,7 +210,7 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left")
         map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left")
 
-        const mappedEvents = events.filter((event) => event.coordinates)
+        const mappedEvents = coverage.exactEvents
 
         mappedEvents.forEach((event) => {
           if (!event.coordinates || !map) {
@@ -156,7 +231,92 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
         })
 
         map.once("load", () => {
-          if (!map || mappedEvents.length < 2) {
+          if (!map) {
+            return
+          }
+          const loadedMap = map
+
+          if (countryBoundaries && coverage.countries.length > 0) {
+            const boundaryByCode = new globalThis.Map(
+              countryBoundaries.features.map((feature) => [feature.properties.countryCode, feature.properties])
+            )
+            const countryByCode = new globalThis.Map(
+              coverage.countries.map((country) => [
+                country.code,
+                { ...country, name: boundaryByCode.get(country.code)?.countryName ?? country.name }
+              ])
+            )
+
+            map.addSource(countrySourceId, {
+              type: "geojson",
+              data: countryBoundaries,
+              attribution: "Country boundaries: Natural Earth"
+            })
+            map.addLayer({
+              id: countryFillLayerId,
+              type: "fill",
+              source: countrySourceId,
+              paint: {
+                "fill-color": "#2563eb",
+                "fill-opacity": 0.38
+              }
+            })
+            map.addLayer({
+              id: countryOutlineLayerId,
+              type: "line",
+              source: countrySourceId,
+              paint: {
+                "line-color": "#1d4ed8",
+                "line-opacity": 0.9,
+                "line-width": 2
+              }
+            })
+
+            countryByCode.forEach((country, countryCode) => {
+              const boundary = boundaryByCode.get(countryCode)
+              if (!boundary) {
+                return
+              }
+
+              const popup = new maplibregl.Popup({
+                closeButton: false,
+                offset: 18
+              }).setDOMContent(createCountryPopupElement(country))
+
+              new maplibregl.Marker({
+                element: createCountryMarkerElement(country)
+              })
+                .setLngLat([boundary.labelLongitude, boundary.labelLatitude])
+                .setPopup(popup)
+                .addTo(loadedMap)
+            })
+
+            map.on("click", countryFillLayerId, (event) => {
+              if (!map) {
+                return
+              }
+              const countryCode = String(event.features?.[0]?.properties?.countryCode ?? "")
+              const country = countryByCode.get(countryCode)
+              if (country) {
+                new maplibregl.Popup({ closeButton: false })
+                  .setLngLat(event.lngLat)
+                  .setDOMContent(createCountryPopupElement(country))
+                  .addTo(map)
+              }
+            })
+            map.on("mouseenter", countryFillLayerId, () => {
+              if (map) {
+                map.getCanvas().style.cursor = "pointer"
+              }
+            })
+            map.on("mouseleave", countryFillLayerId, () => {
+              if (map) {
+                map.getCanvas().style.cursor = ""
+              }
+            })
+          }
+
+          if (mappedEvents.length < 2) {
             return
           }
 
@@ -176,7 +336,7 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
         })
 
         map.on("error", (event) => {
-          if (map && !map.loaded()) {
+          if (map && !map.isStyleLoaded()) {
             const message = event.error?.message ?? "The map style or tiles could not be loaded."
             reportMapError(message)
           }
@@ -193,14 +353,25 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
       map?.remove()
       mapRef.current = null
     }
-  }, [events, mapError, mapStyle])
+  }, [coverage, mapError, mapStyle])
 
   if (!mapError) {
     return (
       <section aria-label="Funding event map" className="relative h-[32rem] overflow-hidden bg-[#dce7f4] sm:h-[36rem] xl:h-full xl:min-h-0">
         <div ref={containerRef} className="h-full w-full" />
-        <div className="pointer-events-none absolute left-14 top-4 rounded-md border border-black/10 bg-white/90 px-3 py-2 text-xs font-medium text-[#24342d] shadow-sm">
-          Approved funding locations
+        <div className="pointer-events-none absolute left-14 top-4 rounded-md border border-black/10 bg-white/95 px-3 py-2 text-xs text-[#31414a] shadow-sm">
+          <p className="font-semibold text-[#24342d]">Approved funding locations</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-blue-600 ring-1 ring-white" />
+              {coverage.exactEvents.length} exact
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-3 border border-blue-700 bg-blue-500/30" />
+              {coverage.countryLevelEventCount} country-level
+            </span>
+            {coverage.unlocatedEventCount > 0 ? <span>{coverage.unlocatedEventCount} unlocated</span> : null}
+          </div>
         </div>
         {!hasMapLocations ? (
           <div className="pointer-events-none absolute bottom-5 left-5 max-w-sm rounded-md border border-black/10 bg-white/95 px-4 py-3 text-sm text-[#31414a] shadow-sm">
@@ -208,7 +379,7 @@ export function MapPanel({ events, dataState, message }: MapPanelProps) {
               {dataState === "ready" ? "No approved map locations yet" : "Map data unavailable"}
             </p>
             <p className="mt-1 text-xs leading-5 text-[#66747d]">
-              {message ?? "Records without source-provided coordinates remain available in the funding feed."}
+              {message ?? "Records without a reported country or source-provided coordinates remain available in the funding feed."}
             </p>
           </div>
         ) : null}
